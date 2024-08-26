@@ -1,0 +1,4 @@
+#values are in inches
+#Material	, cutter type		, diameter	, speed	, feed	, doc 
+Al 6061		, 2-flute square	, 0.125		, 10000	, 5.0	, 0.005
+Al 6061		, 2-flute square	, 0.0625	, 20000	, 5.0	, 0.003
