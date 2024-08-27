@@ -78,7 +78,7 @@ class Hole:
 		depth = self.depth
 		type = self.type
 		side = self.side
-		return(f'{x},{y},{diam},{depth},{type},{side}')
+		return(f'{x};{y};{diam};{depth};{type};{side}')
 		
 	def create_gcode(self, settings):
 		gcode = []
@@ -379,7 +379,7 @@ class CornerRectangle:
 		depth = self.depth
 		type = self.type
 		side = self.side
-		return('{},{},{},{},{},{},{}'.format(x1,y1,x2,y2,depth,type,side))
+		return(f'{x1};{y1};{x2};{y2};{depth};{type};{side}')
 
 	
 	def create_gcode(self, settings):
@@ -492,24 +492,24 @@ class Polygon:
 	def __init__(self, frame, instance_count):
 		self.frame = frame
 		self.instance_count = instance_count
-		self.types = ['outside','inside']
+		self.sides = ['outside','inside']
 		self.create_entries()
 		
 	def create_entries(self):
 		self.points_var 		= tk.StringVar()
 		self.depth_var 			= tk.StringVar()
-		self.type_spin_box_var 	= tk.StringVar()
+		self.side_spin_box_var 	= tk.StringVar()
 		
 		self.points_entry 		= tk.Entry(self.frame, textvariable=self.points_var, width=50)
 		self.depth_entry		= tk.Entry(self.frame, textvariable=self.depth_var, width=10)
-		self.type_spin_box		= tk.Spinbox(self.frame, values = self.types,textvariable=self.type_spin_box_var, width=10)
+		self.side_spin_box		= tk.Spinbox(self.frame, values = self.sides,textvariable=self.side_spin_box_var, width=10)
 		
-		self.type_spin_box		.grid(row=self.instance_count, column=0)
+		self.side_spin_box		.grid(row=self.instance_count, column=0)
 		self.points_entry 		.grid(row=self.instance_count, column=1)
 		self.depth_entry 		.grid(row=self.instance_count, column=2)
 		
 	def destroy_entries(self):
-		self.type_spin_box.destroy()
+		self.side_spin_box.destroy()
 		self.points_entry.destroy()
 		self.depth_entry.destroy()
 		
@@ -695,9 +695,16 @@ class Polygon:
 		return(outset_points)
 			
 	def update_variables(self):
-		self.type 			= self.type_spin_box.get()
+		self.type 			= self.side_spin_box.get()
 		self.points 		= self.points_entry.get()
 		self.depth 			= float(self.depth_entry.get())
+	
+	def data_export(self):
+		self.update_variables()
+		type = self.type
+		points = self.points
+		depth = self.depth
+		return(f'{type};{points};{depth}')
 
 	def create_gcode(self, settings):
 		gcode = []
@@ -873,7 +880,7 @@ class Conn: #cutouts for connectors, special shapes, etc.
 		rotation = self.rotation
 		depth = self.depth
 		type = self.type
-		return(f'{x},{y},{a},{b},{rotation},{depth},{type}')
+		return(f'{x};{y};{a};{b};{rotation};{depth};{type}')
 
 	def create_gcode(self, settings):
 		gcode = []

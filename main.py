@@ -2,7 +2,6 @@ import geometry
 import time
 import tkinter as tk
 from tkinter import ttk
-import grbl_gcodes as grbl
 
 #geometry_types = [
 #|
@@ -44,7 +43,7 @@ def create_gcode():
 
 	gcode = []
 	gcode_header = [\
-		f'{grbl.plane_xy} (xy plane select)',\
+		f'G17 (xy plane select)',\
 		f'{settings["units"]} (G20=inch G21=mm)',\
 		'G90 (absolute distance)',\
 		f'M3 S{settings["speed"]} (spindle clockwise)',\
@@ -77,30 +76,36 @@ def export_data():
 	export_filename = '{}.geom'.format(filename.get())
 	file_buffer = []
 	file_buffer.append('Setup')
-	file_buffer.append('units,{}'.format(units_var.get()))
-	file_buffer.append('cutter_diameter,{}'.format(cutter_diam.get()))
-	file_buffer.append('speed,{}'.format(speed.get()))
-	file_buffer.append('feed,{}'.format(feed.get()))
-	file_buffer.append('depth_of_cut,{}'.format(depth_of_cut.get()))
-	file_buffer.append('retract_height,{}'.format(retract_height.get()))
+	file_buffer.append('units;{}'.format(units_var.get()))
+	file_buffer.append('cutter_diameter;{}'.format(cutter_diam.get()))
+	file_buffer.append('speed;{}'.format(speed.get()))
+	file_buffer.append('feed;{}'.format(feed.get()))
+	file_buffer.append('depth_of_cut;{}'.format(depth_of_cut.get()))
+	file_buffer.append('retract_height;{}'.format(retract_height.get()))
 
 	for geometry in geometry_types:
 		if len(geometry.geometry_dict):
 
 			if geometry.type == 'Hole':
-				file_buffer.append('Hole,(x,y,diameter,depth,type,side)')
+				file_buffer.append('Hole:x;y;diameter;depth;type;side')
 				for n in list(geometry.geometry_dict):
 					data_str = geometry.geometry_dict[n].data_export()
 					file_buffer.append('{}'.format(data_str))
 
 			if geometry.type == 'Rectangle':
-				file_buffer.append('Rectangle,(x1,y1,x2,y2,depth,type,side)')
+				file_buffer.append('Rectangle:x1;y1;x2;y2;depth;type;side')
 				for n in list(geometry.geometry_dict):
 					data_str = geometry.geometry_dict[n].data_export()
 					file_buffer.append('{}'.format(data_str))
 
 			if geometry.type == 'Conn':
-				file_buffer.append('Conn,(x_center,y_center,a,b,rotation,depth,type)')
+				file_buffer.append('Conn:x_center;y_center;a;b;rotation;depth;type')
+				for n in list(geometry.geometry_dict):
+					data_str = geometry.geometry_dict[n].data_export()
+					file_buffer.append('{}'.format(data_str))
+
+			if geometry.type == 'Polygon':
+				file_buffer.append('Polygon:type;[(pointx,pointy),,,];depth')
 				for n in list(geometry.geometry_dict):
 					data_str = geometry.geometry_dict[n].data_export()
 					file_buffer.append('{}'.format(data_str))
@@ -118,8 +123,10 @@ def import_data():
 
 	input_csv = []
 	import_filename = '{}.geom'.format(filename.get())
-	with open(import_filename, 'r') as f: input_lines = f.read().splitlines()
-	for line in input_lines: input_csv.append(line.split(','))
+	with open(import_filename, 'r') as f: 
+		input_lines = f.read().splitlines()
+	for line in input_lines: 
+		input_csv.append(line.split(';'))
 
 	for line in input_csv:
 		#print(line)
@@ -134,6 +141,9 @@ def import_data():
 			continue
 		if line[0].startswith('Conn'):
 			csv_section = 'Conn'
+			continue
+		if line[0].startswith('Polygon'):
+			csv_section = 'Polygon'
 			continue
 
 		if csv_section == 'Setup':
@@ -187,6 +197,14 @@ def import_data():
 			if line[6]  == 'doubleD':	conn_class.geometry_dict[last_instance].type_spin_box_var.set('doubleD')
 			if line[6]  == 'DE':		conn_class.geometry_dict[last_instance].type_spin_box_var.set('DE')
 
+		if csv_section == 'Polygon':
+			poly_class = geometry_types[geometry_types.index(poly)]
+			poly_class.add_item()
+			last_instance = list(poly_class.geometry_dict)[-1]
+			if line[0]  == 'inside':	poly_class.geometry_dict[last_instance].side_spin_box_var.set('inside')
+			if line[0]  == 'outside':	poly_class.geometry_dict[last_instance].side_spin_box_var.set('outside')
+			poly_class.geometry_dict[last_instance].points_var.set(line[1])
+			poly_class.geometry_dict[last_instance].depth_var.set(line[2])
 		
 def get_profiles():
 	file_name = 'cutting_profiles.txt'
@@ -279,7 +297,7 @@ filename 				= tk.StringVar()
 
 cutter_diam				.set('0.125')
 speed					.set('10000')
-feed					.set('5')
+feed					.set('30')
 depth_of_cut			.set('0.005')
 retract_height			.set('0.100')
 filename				.set('job_out')
