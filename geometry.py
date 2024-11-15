@@ -88,6 +88,7 @@ class Hole:
 		feed 					= settings['feed']
 		retract_height 			= settings['retract_height']
 		unit_precision 			= settings['unit_precision']
+		lasermode 				= settings['lasermode']
 		
 		self.update_variables()
 		x_center = round(self.x_center, unit_precision)
@@ -117,13 +118,19 @@ class Hole:
 			gcode.append(f'G1 X{hole_max_y} Y{y_center} Z0')#go to hole starting point
 			
 			#generate and append helical arcs
-			for i in z_heights:
-				gcode.append(f'G3 X{hole_max_y} Y{y_center} Z{i} I{-toolpath_radius}')#travel circumference, down z layer height
-				gcode.append(f'G1 X{hole_max_y} Y{y_center} Z{i}')#no move but tell machine we are back at starting point
+			if not lasermode:
+				for i in z_heights:
+					gcode.append(f'G3 X{hole_max_y} Y{y_center} Z{i} I{-toolpath_radius}')#travel circumference, down z layer height
+					gcode.append(f'G1 X{hole_max_y} Y{y_center} Z{i}')#no move but tell machine we are back at starting point
+				gcode.append(f'G3 X{hole_max_y} Y{y_center} Z{i} I{-toolpath_radius}')#bottom of hole
+				gcode.append(f'G0 Z{retract_height}')#retract height
+				#gcode.append(f'G0 X{x_center} Y{y_center}')#hole center
 
-			gcode.append(f'G3 X{hole_max_y} Y{y_center} Z{i} I{-toolpath_radius}')#bottom of hole
-			gcode.append(f'G0 Z{retract_height}')#retract height
-			#gcode.append(f'G0 X{x_center} Y{y_center}')#hole center
+			elif lasermode:
+				gcode.append('M3') #laser on
+				gcode.append(f'G3 X{hole_max_y} Y{y_center} I{-toolpath_radius}')#travel circumference, down z layer height
+				gcode.append(f'G1 X{hole_max_y} Y{y_center}')#no move but tell machine we are back at starting point
+				gcode.append('M5') #laser off
 		
 		if self.type == 'pocket':
 			#create annular rings for pocketed hole type
@@ -143,12 +150,20 @@ class Hole:
 			gcode.append(f'S{speed}')
 			gcode.append(f'G0 Z{retract_height}')#go to safe z height
 			gcode.append(f'G0 X{x_center} Y{y_center}')#go to hole center
-		
-			for i in z_heights:
+
+			if not lasermode:
+				for i in z_heights:
+					for j in annular_rings:
+						gcode.append(f'G1 X{x_center} Y{y_center+j} Z{i}')
+						gcode.append(f'G3 X{x_center} Y{y_center+j} Z{i} J{j*-1}')#travel circumference, down z layer height
+				
+			elif lasermode:
+				gcode.append('M3') #laser on
 				for j in annular_rings:
 					gcode.append(f'G1 X{x_center} Y{y_center+j} Z{i}')
 					gcode.append(f'G3 X{x_center} Y{y_center+j} Z{i} J{j*-1}')#travel circumference, down z layer height
-			
+				gcode.append('M5') #laser off
+
 			gcode.append(f'G0 Z{retract_height}')#retract height
 			#gcode.append(f'G0 X{x_center} Y{y_center}')#hole center
 
@@ -232,6 +247,7 @@ class RectHolePattern:
 		feed 				= settings['feed']
 		retract_height 		= settings['retract_height']
 		unit_precision 		= settings['unit_precision']
+		
 		
 		self.update_variables()
 		
@@ -390,6 +406,7 @@ class CornerRectangle:
 		feed 			= settings['feed']
 		retract_height 	= settings['retract_height']
 		unit_precision 	= settings['unit_precision']
+		lasermode 		= settings['lasermode']
 		
 		self.update_variables()
 		
@@ -419,22 +436,35 @@ class CornerRectangle:
 		z_heights=z_height_passes(self.depth,depth_of_cut,unit_precision)
 
 		if self.type == 'perimeter':
-			#positioning and setup
-			gcode.append(f'F{feed}') #use same feed rate throughout
-			gcode.append(f'S{speed}')
-			gcode.append(f'G0 Z{retract_height}') #go to safe z height
-			gcode.append(f'G1 X{min_toolpath_x} Y{min_toolpath_y}') #go to xmin ymin
-			
-			#generate and append perimeter pass at each z_height_pass
-			for i in z_heights:
-				gcode.append(f'G1 X{min_toolpath_x} Y{max_toolpath_y} Z{i}') #xmin ymax plunge here
-				gcode.append(f'G1 X{max_toolpath_x} Y{max_toolpath_y}') #xmax ymax
-				gcode.append(f'G1 X{max_toolpath_x} Y{min_toolpath_y}') #xmax ymin
-				gcode.append(f'G1 X{min_toolpath_x} Y{min_toolpath_y}') #xmin ymin
+			if not lasermode:
+				#positioning and setup
+				gcode.append(f'F{feed}') #use same feed rate throughout
+				gcode.append(f'S{speed}')
+				gcode.append(f'G0 Z{retract_height}') #go to safe z height
+				gcode.append(f'G1 X{min_toolpath_x} Y{min_toolpath_y}') #go to xmin ymin
 				
-			gcode.append(f'G1 X{min_toolpath_x} Y{max_toolpath_y}') #xmin ymax
-			gcode.append(f'G0 Z{retract_height}')
-			#gcode.append(f'G0 X{x_center} Y{y_center}') #go to center
+				#generate and append perimeter pass at each z_height_pass
+				for i in z_heights:
+					gcode.append(f'G1 X{min_toolpath_x} Y{max_toolpath_y} Z{i}') #xmin ymax plunge here
+					gcode.append(f'G1 X{max_toolpath_x} Y{max_toolpath_y}') #xmax ymax
+					gcode.append(f'G1 X{max_toolpath_x} Y{min_toolpath_y}') #xmax ymin
+					gcode.append(f'G1 X{min_toolpath_x} Y{min_toolpath_y}') #xmin ymin
+					
+				gcode.append(f'G1 X{min_toolpath_x} Y{max_toolpath_y}') #xmin ymax
+				gcode.append(f'G0 Z{retract_height}')
+				#gcode.append(f'G0 X{x_center} Y{y_center}') #go to center
+
+			elif lasermode:
+				gcode.append(f'F{feed}') #use same feed rate throughout
+				gcode.append(f'S{speed}')
+				gcode.append(f'G0 Z{retract_height}') #go to safe z height
+				gcode.append(f'M3') #laser on
+				gcode.append(f'G1 X{min_toolpath_x} Y{min_toolpath_y}')
+				gcode.append(f'G1 X{max_toolpath_x} Y{min_toolpath_y}')
+				gcode.append(f'G1 X{max_toolpath_x} Y{max_toolpath_y}')
+				gcode.append(f'G1 X{min_toolpath_x} Y{max_toolpath_y}')
+				gcode.append(f'G1 X{min_toolpath_x} Y{min_toolpath_y}')
+				gcode.append(f'M5') #laser off
 			
 		if self.type == 'pocket':
 			tool_overlap_pct = .1

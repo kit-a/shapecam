@@ -40,21 +40,25 @@ def create_gcode():
 	settings['feed'] 			= float(feed.get())
 	settings['retract_height'] 	= float(retract_height.get())
 	settings['unit_precision'] 	= 5
+	settings['lasermode'] 		= lasermode_var.get() 
 
-	gcode = []
-	gcode_header = [\
-		f'G17 (xy plane select)',\
-		f'{settings["units"]} (G20=inch G21=mm)',\
-		'G90 (absolute distance)',\
-		f'M3 S{settings["speed"]} (spindle clockwise)',\
-		'G4 P20 (dwell 20 seconds)']
+	gcode_header = []
+	gcode_header.append(f'G17 (xy plane select)')
+	gcode_header.append(f'{settings["units"]} (G20=inch G21=mm)')
+	gcode_header.append('G90 (absolute distance)')
+
+	if not settings['lasermode']: 
+		gcode_header.append(f'M3 S{settings["speed"]} (spindle clockwise)')
+		gcode_header.append('G4 P20 (dwell 20 seconds)')
+	
 	gcode_footer = ['M5 (spindle stop)', 'M2 (program end)']
 
+	gcode = []
 	for line in gcode_header:
 		gcode.append(line)
 		
 	for type in geometry_types:
-		if len(type.geometry_dict): 						#type.geometry_dict holds a number of geometry objects of type string kwarg 
+		if len(type.geometry_dict): 					#type.geometry_dict holds a number of geometry objects of type string kwarg 
 			for instance in list(type.geometry_dict): 	#eg: hole 1, hole 2, etc
 				geometry_gcode = type.geometry_dict[instance].create_gcode(settings)
 				#print(geometry_gcode)
@@ -294,6 +298,7 @@ feed 					= tk.StringVar()
 depth_of_cut 			= tk.StringVar()
 retract_height 			= tk.StringVar()
 filename 				= tk.StringVar()
+lasermode_var			= tk.BooleanVar()
 
 cutter_diam				.set('0.125')
 speed					.set('10000')
@@ -324,6 +329,8 @@ gcode_btn 				= tk.Button(options_frame, text='Create G-Code', command=create_gc
 export_data_btn 		= tk.Button(options_frame, text='Export Data',command=export_data)
 import_data_btn 		= tk.Button(options_frame, text='Import Data', command=import_data)
 
+lasermode_cb			= tk.Checkbutton(options_frame, variable=lasermode_var,text='Laser Mode')
+
 rb_in					.grid(row=0, column=0)
 rb_mm					.grid(row=0, column=1)
 cutter_diam_label		.grid(row=2, column=0)
@@ -341,6 +348,7 @@ filename_entry			.grid(row=7, column=1)
 gcode_btn				.grid(row=8, column=0)
 export_data_btn			.grid(row=8, column=1)
 import_data_btn			.grid(row=8, column=2)
+lasermode_cb			.grid(row=8, column=3)
 
 ###shapes notebook###############################################
 page1 = ttk.Frame(nb)
