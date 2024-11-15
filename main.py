@@ -227,7 +227,7 @@ class Geometry: #each Geometry instance is container for a geometry type and hol
 	def create_gui_items(self):
 		self.header_frame 		= tk.Frame(self.parent_frame)
 		self.data_frame 		= tk.Frame(self.parent_frame)
-		self.canvas 			= tk.Canvas(self.data_frame, width=450)
+		self.canvas 			= tk.Canvas(self.data_frame, width=600)
 		self.canvas_frame 		= tk.Frame(self.canvas)
 		
 		self.header_frame		.grid(row=0, column=0, sticky='w')
@@ -274,11 +274,11 @@ class Geometry: #each Geometry instance is container for a geometry type and hol
 		self.geometry_dict[self.instance_counter].test()
 	
 root = tk.Tk()
-root.resizable(False, False)
+root.resizable(True, True)
 #root.title("title")
 
 ###main gui layout########################################
-main_frame 			= tk.Frame(root)#, height=500, width=500)
+main_frame 			= tk.Frame(root)#, height=500, width=800)
 top_frame 			= tk.Frame(main_frame)
 options_frame 		= tk.Frame(top_frame)
 bottom_frame 		= tk.Frame(main_frame)
